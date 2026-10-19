@@ -1,0 +1,151 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Global Volcano Explorer</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<style>
+:root{--bg:#0b1220;--panel:#121b2d;--panel2:#18233a;--line:#26334d;--tx:#e8edf6;--mut:#93a1b8;--ac:#ff7a2f;--ac2:#e5482d;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:18px;margin:0;letter-spacing:.2px}h1 b{color:var(--ac)}
+.sub{color:var(--mut);font-size:12.5px}.sp{flex:1}
+.badge{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:99px;padding:3px 10px;white-space:nowrap}
+.badge i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ac);margin-right:6px}
+button{font:inherit;color:var(--tx);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:6px 11px;cursor:pointer}
+button:hover{border-color:var(--ac)}
+main{flex:1;min-height:0;display:flex}
+#side{width:350px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#ctl{padding:12px;display:grid;gap:8px;border-bottom:1px solid var(--line)}
+label{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;display:grid;gap:3px}
+input,select{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+input:focus,select:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+#stats{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.st{padding:8px 10px;border-right:1px solid var(--line)}.st:last-child{border:0}
+.st b{display:block;font-size:18px}.st span{font-size:10.5px;color:var(--mut)}.st.f b{color:var(--ac)}
+#list{flex:1;overflow:auto;min-height:0}
+.it{padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.it:hover{background:var(--panel2)}.it.on{background:var(--panel2);box-shadow:inset 3px 0 var(--ac)}
+.it b{display:block}.it span{color:var(--mut);font-size:12px}
+.none{padding:20px 14px;color:var(--mut)}
+#more{margin:10px 12px}
+#mapwrap{flex:1;position:relative;min-width:0}
+#map{position:absolute;inset:0;background:var(--bg)}
+.leaflet-container{background:var(--bg);font:inherit}
+.leaflet-bar a{background:var(--panel);color:var(--tx);border-color:var(--line)}
+.leaflet-control-attribution{background:rgba(11,18,32,.8)!important;color:var(--mut)!important}
+.leaflet-control-attribution a{color:var(--ac)!important}
+.leaflet-control-scale-line{background:rgba(11,18,32,.8);color:var(--tx);border-color:var(--mut)}
+.leaflet-tooltip{background:var(--panel);color:var(--tx);border-color:var(--line)}
+.ctl{background:var(--panel);color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.6}
+.ctl i{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px;margin-right:6px}
+.ctl small{color:var(--mut);display:block;max-width:210px;line-height:1.35;margin-top:3px}
+#detail{position:absolute;top:12px;right:12px;width:310px;max-height:calc(100% - 24px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;z-index:1000;padding:14px}
+#detail h2{margin:0 28px 2px 0;font-size:17px}#detail .c{color:var(--mut);margin-bottom:10px}
+#detail dl{margin:0;display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:12.5px}
+#detail dt{color:var(--mut)}#detail dd{margin:0;word-break:break-word}.na{color:#6f7d94;font-style:italic}
+#x{position:absolute;top:8px;right:8px;padding:2px 8px}
+#detail .acts{margin-top:12px;display:flex;gap:8px}
+#empty,#err{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:900;background:var(--panel);border:1px solid var(--line);padding:14px 18px;border-radius:8px;text-align:center}
+#err{color:#ff9d8a;max-width:80%}
+#about{position:fixed;inset:0;background:rgba(5,9,16,.7);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px}
+#about>div{background:var(--panel);border:1px solid var(--line);border-radius:10px;max-width:620px;max-height:90%;overflow:auto;padding:20px}
+#about h3{margin:0 0 8px}#about h4{margin:14px 0 4px;color:var(--ac);font-size:13px}#about p,#about li{color:#c9d3e3;margin:3px 0}#about ul{padding-left:18px;margin:4px 0}
+a{color:var(--ac)}[hidden]{display:none!important}
+@media(max-width:820px){.sub,.badge{display:none}main{flex-direction:column}#mapwrap{order:-1;flex:none;height:46%}#side{width:100%;flex:1;border-right:0;border-top:1px solid var(--line)}
+#ctl{grid-template-columns:1fr 1fr}#ctl .full{grid-column:1/-1}
+#detail{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:70%}#detail dl{grid-template-columns:95px 1fr}.ctl small{display:none}}
+</style></head><body>
+<header><h1>Global <b>Volcano</b> Explorer</h1><span class="sub">Peta interaktif persebaran gunung api dunia</span><span class="sp"></span>
+<span class="badge"><i></i>Smithsonian GVP · Volcanoes of the World 5.4.0</span><button id="bAbout">Tentang Data</button></header>
+<main>
+<aside id="side">
+<div id="ctl">
+<label class="full">Cari gunung api / negara<input id="q" type="search" placeholder="mis. Merapi atau Indonesia" autocomplete="off"></label>
+<label>Negara<select id="fCountry"></select></label><label>Tipe gunung api<select id="fType"></select></label>
+<label>Bukti aktivitas<select id="fEv"></select></label><label>Lingkungan tektonik<select id="fTect"></select></label>
+<div class="row full"><button id="bReset">Reset filter</button><button id="bFit">Zoom ke hasil</button></div>
+</div>
+<div id="stats"><div class="st"><b id="sN">–</b><span>Catatan dataset</span></div><div class="st"><b id="sC">–</b><span>Negara</span></div><div class="st"><b id="sT">–</b><span>Tipe</span></div><div class="st f"><b id="sF">–</b><span>Hasil filter</span></div></div>
+<div id="list"></div>
+</aside>
+<section id="mapwrap"><div id="map"></div><div id="err" hidden></div><div id="empty" hidden>Tidak ada gunung api yang sesuai dengan pencarian dan filter.</div><div id="detail" hidden></div></section>
+</main>
+<div id="about" hidden><div><h3>Tentang Data</h3>
+<h4>Sumber</h4><p>Global Volcanism Program, Volcanoes of the World versi 5.4.0 — “Primary Names of Holocene Volcanoes”. Diterbitkan oleh Department of Mineral Sciences, National Museum of Natural History, Smithsonian Institution. <a href="https://volcano.si.edu/" target="_blank" rel="noopener">volcano.si.edu</a></p>
+<p id="aLoad"></p><p>Berkas diunduh dari situs sumber pada 19 Oktober 2026 pukul 03.22 (sesuai metadata berkas). Data bersifat statis, tidak diperbarui secara real-time.</p>
+<h4>Atribut utama</h4><p>Nomor, nama, negara, kelompok dan wilayah vulkanik, bentuk lahan, tipe gunung api, bukti aktivitas, letusan terakhir yang diketahui, koordinat, elevasi, lingkungan tektonik, dan tipe batuan dominan.</p>
+<h4>Keterbatasan</h4><ul><li>Ini daftar gunung api Holosen dari GVP, bukan daftar semua gunung api yang pernah ada di dunia.</li><li>Tidak semua catatan menunjukkan gunung api yang sedang aktif. Bukti aktivitas dan letusan terakhir yang diketahui adalah catatan historis/geologis, bukan status aktivitas saat ini.</li><li>Warna dan ukuran marker seragam dan tidak menunjukkan tingkat bahaya, status siaga, atau probabilitas letusan; dataset tidak memuat informasi tersebut.</li><li>Sebagian atribut kosong; ditampilkan sebagai “Tidak tersedia dalam dataset”. Nilai “Unknown” ditampilkan sebagaimana tercatat di sumber.</li><li>Elevasi adalah angka dari dataset, bukan tinggi bangunan gunung api.</li><li>Latar peta adalah citra Natural Earth (Hypsometric Tints with Shaded Relief) yang diproyeksikan ulang ke Web Mercator dan digelapkan, serta batas negara Natural Earth (world-atlas). Bukan tile peta daring.</li></ul>
+<p style="margin-top:14px"><button id="bAboutX">Tutup</button></p></div></div>
+<script src="vendor/leaflet.js"></script>
+<script src="data/gvp-data.js"></script>
+<script src="data/borders.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const cl=v=>{v=(v==null?'':String(v)).trim();return v||null};
+function fail(e){const b=$('#err');b.hidden=false;b.textContent='Gagal memuat dataset atau peta: '+(e&&e.message||e)+'. Pastikan folder data/ dan vendor/ ada di lokasi yang sama dengan index.html.';console.error(e)}
+try{init()}catch(e){fail(e)}
+function init(){
+const V=[];let bad=0;
+for(const r of RAW.d){const lat=parseFloat(r[9]),lon=parseFloat(r[10]);
+ if(!isFinite(lat)||!isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){bad++;continue}
+ const el=cl(r[11]);
+ V.push({id:cl(r[0]),name:cl(r[1]),country:cl(r[2]),group:cl(r[3]),region:cl(r[4]),landform:cl(r[5]),type:cl(r[6]),ev:cl(r[7]),last:cl(r[8]),lat,lon,elev:el!=null&&isFinite(Number(el))?Number(el):null,tect:cl(r[12]),rock:cl(r[13]),q:norm((r[1]||'')+' '+(r[2]||''))})}
+if(!V.length)throw new Error('tidak ada catatan valid');
+const uniq=k=>{const m=new Map();V.forEach(v=>v[k]&&m.set(v[k],(m.get(v[k])||0)+1));return[...m].sort((a,b)=>a[0].localeCompare(b[0]))};
+const F={country:'#fCountry',type:'#fType',ev:'#fEv',tect:'#fTect'};
+const S={q:'',country:'',type:'',ev:'',tect:''};
+for(const k in F){$(F[k]).innerHTML='<option value="">Semua</option>'+uniq(k).map(([v,n])=>`<option value="${esc(v)}">${esc(v)} (${n})</option>`).join('');$(F[k]).onchange=e=>{S[k]=e.target.value;apply()}}
+const nC=uniq('country').length,nT=uniq('type').length;
+$('#sN').textContent=V.length.toLocaleString('id-ID');$('#sC').textContent=nC;$('#sT').textContent=nT;
+$('#aLoad').textContent=`Jumlah catatan yang berhasil dimuat: ${V.length.toLocaleString('id-ID')} dari ${RAW.d.length.toLocaleString('id-ID')} baris data${bad?` (${bad} dilewati karena koordinat tidak valid)`:' (seluruh koordinat valid)'}.`;
+// peta
+const rend=L.canvas({padding:.5});
+const map=L.map('map',{renderer:rend,minZoom:1,maxZoom:12,worldCopyJump:false,maxBounds:[[-90,-190],[90,190]],maxBoundsViscosity:.9,zoomSnap:.25,zoomDelta:.5});
+const home=()=>map.fitBounds([[-58,-175],[78,180]],{animate:false});home();
+L.imageOverlay('assets/basemap.jpg',[[-85.0511,-180],[85.0511,180]],{interactive:false}).addTo(map);
+L.geoJSON({type:'Feature',geometry:{type:'MultiLineString',coordinates:GEO.borders}},{interactive:false,renderer:rend,style:{color:'#8a9bb8',opacity:.35,weight:.6,fill:false}}).addTo(map);
+map.attributionControl.addAttribution('Data: <a href="https://volcano.si.edu/" target="_blank" rel="noopener">Smithsonian GVP</a> · Basemap: Natural Earth');
+L.control.scale({imperial:false}).addTo(map);
+const HomeC=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('button','ctl');b.textContent='⌂ Tampilan global';b.style.cursor='pointer';L.DomEvent.disableClickPropagation(b);b.onclick=home;return b}});new HomeC().addTo(map);
+const LegC=L.Control.extend({options:{position:'bottomleft'},onAdd(){const d=L.DomUtil.create('div','ctl');d.innerHTML='<i style="background:#ff7a2f"></i>1 catatan gunung api Holosen<br><i style="background:none;border:2px solid #fff"></i>Gunung api terpilih<small>Warna seragam; bukan indikator bahaya atau status aktivitas.</small>';return d}});new LegC().addTo(map);
+const grp=L.layerGroup().addTo(map);
+const hl=L.circleMarker([0,0],{radius:10,color:'#fff',weight:2,fill:false,interactive:false,renderer:rend});
+const MS={radius:4,fillColor:'#ff7a2f',fillOpacity:.85,color:'#2a1208',weight:.7,renderer:rend};
+V.forEach(v=>{v.m=L.circleMarker([v.lat,v.lon],MS);v.m.bindTooltip(v.name||'(tanpa nama)');v.m.on('click',()=>select(v,false))});
+let filtered=V,sel=null,shown=150;
+function apply(){
+ const q=norm(S.q.trim());
+ filtered=V.filter(v=>(!q||v.q.includes(q))&&(!S.country||v.country===S.country)&&(!S.type||v.type===S.type)&&(!S.ev||v.ev===S.ev)&&(!S.tect||v.tect===S.tect));
+ grp.clearLayers();filtered.forEach(v=>grp.addLayer(v.m));
+ $('#sF').textContent=filtered.length.toLocaleString('id-ID');$('#empty').hidden=filtered.length>0;
+ if(sel&&!filtered.includes(sel))closeD();
+ shown=150;renderList();if(sel)hl.bringToFront()}
+function renderList(){
+ const L2=$('#list');if(!filtered.length){L2.innerHTML='<div class="none">Tidak ada hasil. Ubah kata kunci atau tekan Reset filter.</div>';return}
+ const part=filtered.slice(0,shown);
+ L2.innerHTML=part.map((v,i)=>`<div class="it${v===sel?' on':''}" data-i="${i}"><b>${esc(v.name||'(tanpa nama)')}</b><span>${esc(v.country||'Negara tidak tersedia')} · ${esc(v.type||'Tipe tidak tersedia')}</span></div>`).join('')+(filtered.length>shown?`<button id="more">Tampilkan lebih banyak (${shown} dari ${filtered.length.toLocaleString('id-ID')})</button>`:'');
+ L2.querySelectorAll('.it').forEach(e=>e.onclick=()=>select(part[+e.dataset.i],true));
+ const mb=$('#more');if(mb)mb.onclick=()=>{shown+=200;const t=L2.scrollTop;renderList();L2.scrollTop=t}}
+const na='<span class="na">Tidak tersedia dalam dataset</span>';
+function select(v,fly){
+ sel=v;hl.setLatLng([v.lat,v.lon]).addTo(map).bringToFront();
+ const f=(a,b)=>`<dt>${a}</dt><dd>${b==null?na:esc(b)}</dd>`;
+ $('#detail').hidden=false;$('#detail').innerHTML=`<button id="x" aria-label="Tutup">✕</button><h2>${esc(v.name||'(tanpa nama)')}</h2><div class="c">${esc(v.country||'Negara tidak tersedia')}</div><dl>`+
+ f('Nomor ID',v.id)+f('Wilayah vulkanik',v.region)+f('Kelompok wilayah',v.group)+f('Tipe gunung api',v.type)+f('Bentuk lahan',v.landform)+f('Bukti aktivitas',v.ev)+f('Letusan terakhir diketahui',v.last)+f('Elevasi',v.elev==null?null:v.elev.toLocaleString('id-ID')+' m')+f('Lingkungan tektonik',v.tect)+f('Batuan dominan',v.rock)+f('Latitude',v.lat.toFixed(4))+f('Longitude',v.lon.toFixed(4))+
+ `</dl><div class="acts"><button id="ctr">Pusatkan di peta</button></div>`;
+ $('#x').onclick=closeD;$('#ctr').onclick=()=>center(v);
+ if(fly)center(v);
+ renderList();const a=$('#list .on');if(a)a.scrollIntoView({block:'nearest'})}
+function center(v){map.flyTo([v.lat,v.lon],Math.max(map.getZoom(),6),{duration:.8})}
+function closeD(){sel=null;$('#detail').hidden=true;map.removeLayer(hl);renderList()}
+$('#q').oninput=e=>{S.q=e.target.value;apply()};
+$('#bReset').onclick=()=>{S.q='';$('#q').value='';for(const k in F){S[k]='';$(F[k]).value=''}apply();home()};
+$('#bFit').onclick=()=>{if(filtered.length)map.fitBounds(L.latLngBounds(filtered.map(v=>[v.lat,v.lon])),{padding:[40,40],maxZoom:8})};
+$('#bAbout').onclick=()=>$('#about').hidden=false;$('#bAboutX').onclick=()=>$('#about').hidden=true;
+$('#about').onclick=e=>{if(e.target.id==='about')e.target.hidden=true};
+addEventListener('resize',()=>map.invalidateSize());
+setTimeout(()=>{map.invalidateSize();home()},200);
+apply();
+}
+</script></body></html>
