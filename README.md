@@ -20,7 +20,7 @@ lalu buka http://localhost:8000
 - `index.html` - aplikasi (HTML, CSS, JS)
 - `data/gvp-data.js` - data GVP (1.214 baris, kolom sesuai berkas asli)
 - `data/borders.js` - batas negara
-- `assets/basemap.jpg` - basemap Natural Earth HYP_HR, diproyeksikan ke Web Mercator dan digelapkan
+- `assets/basemap.jpg` dan `basemap-sm.jpg` - basemap Natural Earth (Cross Blended Hypso with Relief, Water, Drains, and Ocean Bottom), Web Mercator, digelapkan; versi kecil untuk ponsel
 - `vendor/` - Leaflet 1.9.4
 
 ## Catatan data
